@@ -9,14 +9,22 @@ public class Player : MonoBehaviour
 
 
     [SerializeField] private float xSpeed;
-    [SerializeField] private float xInput;
     [SerializeField] private float jumpForce;
 
+    [Header("Dash Info")] [SerializeField] private float dashDuration;
+    [SerializeField] private float dashSpeed;
+    [SerializeField] private float dashCooldown;
+
+    private float dashTime;
+    private float dashCooldownTimer;
+
+    private float xInput;
     private int facingDirection = 1;
     private bool facingRight = true;
 
-    [Header("Collision Info")]
-    [SerializeField] private float groundCheckDistance;
+    [Header("Collision Info")] [SerializeField]
+    private float groundCheckDistance;
+
     [SerializeField] private LayerMask whatIsGround;
     private bool isGrounded;
 
@@ -31,9 +39,13 @@ public class Player : MonoBehaviour
     void Update()
     {
         Movement();
+        CheckInput();
         CheckGround();
 
-        CheckInput();
+        dashTime -= Time.deltaTime;
+        dashCooldownTimer -= Time.deltaTime;
+
+
         FlipController();
         AnimatorController();
     }
@@ -51,11 +63,34 @@ public class Player : MonoBehaviour
         {
             Jump();
         }
+
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            DashAbility();
+        }
+    }
+
+    private void DashAbility()
+    {
+        // Debug.Log("Dash key down.");
+        if (dashCooldownTimer < 0)
+        {
+            dashCooldownTimer = dashCooldown;
+            dashTime = dashDuration;
+        }
     }
 
     private void Movement()
     {
-        rb.velocity = new Vector2(xInput * xSpeed, rb.velocity.y);
+        // rb.velocity = new Vector2(xInput * xSpeed, rb.velocity.y);
+        if (dashTime > 0)
+        {
+            rb.velocity = new Vector2(xInput * dashSpeed, 0);
+        }
+        else
+        {
+            rb.velocity = new Vector2(xInput * xSpeed, rb.velocity.y);
+        }
     }
 
     private void Jump()
@@ -72,6 +107,7 @@ public class Player : MonoBehaviour
         anim.SetBool("isRunning", isRunning);
         anim.SetBool("isGround", isGrounded);
         anim.SetFloat("yVelocity", rb.velocity.y);
+        anim.SetBool("isDashing", dashTime > 0);
     }
 
     private void Flip()
