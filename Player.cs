@@ -2,16 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Player : MonoBehaviour
-{
-    private Rigidbody2D rb;
-    private Animator anim;
-
-
+public class Player : Entity {
+    [Header("Move Info")]
     [SerializeField] private float xSpeed;
     [SerializeField] private float jumpForce;
 
-    [Header("Dash Info")] [SerializeField] private float dashDuration;
+    [Header("Dash Info")]
+    [SerializeField] private float dashDuration;
     [SerializeField] private float dashSpeed;
     [SerializeField] private float dashCooldown;
 
@@ -19,120 +16,77 @@ public class Player : MonoBehaviour
     private float dashCooldownTimer;
 
     private float xInput;
-    private int facingDirection = 1;
-    private bool facingRight = true;
 
-    [Header("Collision Info")] [SerializeField]
-    private float groundCheckDistance;
-
-    [SerializeField] private LayerMask whatIsGround;
-    private bool isGrounded;
+    [Header("Attack Info")]
+    [SerializeField] private bool isAttacking;
 
     // Start is called before the first frame update
-    void Start()
-    {
-        rb = GetComponent<Rigidbody2D>();
-        anim = GetComponentInChildren<Animator>();
+    protected override void Start() {
+        base.Start();
     }
 
     // Update is called once per frame
-    void Update()
-    {
+    protected override void Update() {
+        base.Update();
         Movement();
         CheckInput();
-        CheckGround();
 
         dashTime -= Time.deltaTime;
         dashCooldownTimer -= Time.deltaTime;
 
-
-        FlipController();
         AnimatorController();
     }
 
-    private void CheckGround()
-    {
-        isGrounded = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, whatIsGround);
+    public void AttackOver() {
+        isAttacking = false;
     }
 
-    private void CheckInput()
-    {
+    private void CheckInput() {
         xInput = Input.GetAxisRaw("Horizontal");
 
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
+        if (Input.GetKeyDown(KeyCode.Space)) {
             Jump();
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift))
-        {
+        if (Input.GetKeyDown(KeyCode.LeftShift)) {
             DashAbility();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Mouse0)) {
+            isAttacking = true;
         }
     }
 
-    private void DashAbility()
-    {
+    private void DashAbility() {
         // Debug.Log("Dash key down.");
-        if (dashCooldownTimer < 0)
-        {
+        if (dashCooldownTimer < 0) {
             dashCooldownTimer = dashCooldown;
             dashTime = dashDuration;
         }
     }
 
-    private void Movement()
-    {
+    private void Movement() {
         // rb.velocity = new Vector2(xInput * xSpeed, rb.velocity.y);
-        if (dashTime > 0)
-        {
-            rb.velocity = new Vector2(xInput * dashSpeed, 0);
+        if (dashTime > 0) {
+            rb.velocity = new Vector2(facingDirection * dashSpeed, 0);
         }
-        else
-        {
+        else {
             rb.velocity = new Vector2(xInput * xSpeed, rb.velocity.y);
         }
     }
 
-    private void Jump()
-    {
-        if (isGrounded)
-        {
+    private void Jump() {
+        if (isGrounded && !isAttacking) {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         }
     }
 
-    private void AnimatorController()
-    {
+    private void AnimatorController() {
         bool isRunning = (rb.velocity.x != 0);
         anim.SetBool("isRunning", isRunning);
         anim.SetBool("isGround", isGrounded);
         anim.SetFloat("yVelocity", rb.velocity.y);
         anim.SetBool("isDashing", dashTime > 0);
-    }
-
-    private void Flip()
-    {
-        facingDirection = facingDirection * -1;
-        facingRight = !facingRight;
-        transform.Rotate(0, 180, 0);
-    }
-
-    private void FlipController()
-    {
-        if (rb.velocity.x > 0 && !facingRight)
-        {
-            Flip();
-        }
-        else if (rb.velocity.x < 0 && facingRight)
-        {
-            Flip();
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(transform.position,
-            new Vector3(transform.position.x, transform.position.y - groundCheckDistance));
+        anim.SetBool("isAttacking", isAttacking);
     }
 }
